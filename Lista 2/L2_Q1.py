@@ -42,8 +42,8 @@ def get_random_event(events, random_number):
         else:
             lower_bound += eventProb
 
-N = 100
-t = 3
+N = 100 # Dataset size
+t = 3   # Iterations
 
 # Initialize X[0] with a state from 0 to 2
 X = np.empty((N, t+1), dtype=int)
