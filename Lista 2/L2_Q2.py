@@ -8,7 +8,7 @@ import numpy                as np
 import matplotlib.pyplot    as plt
 import random
 
-from utils import get_random_event, perturb
+from utils import get_random_event, perturb, metropolis_prob
 
 # Pretty printing options
 np.set_printoptions(precision=3, suppress=True)
@@ -69,31 +69,83 @@ print("Fatores de Boltz normalizados\n", fatoresBoltz)
 print("\nVetor invariante\n", piVec)
 print("\nDiferença\n", np.abs(fatoresBoltz-piVec))
 
-# # Letra E
-# # Executar SA usando a matriz de transição
-#
-# # Vetor de temperaturas
-# # T = [0.1000, 0.0631, 0.0500, 0.0431, 0.0387, 0.0356, 0.0333, 0.0315, 0.0301, 0.0289]
-# iters = 1000    # Iteracoes
-# N = 1000    # Tamanho do conj de dados
-# t = 5       # Num de Estados
+# Letra E
+# Executar SA usando a matriz de transição
+
+# Funcao custo, Dom =  {0, 1, 2, 3, 4}
+J_func = lambda x: J[x]
+
+# Vetor de temperaturas
+tempVec = [0.1000, 0.0631, 0.0500, 0.0431, 0.0387, 0.0356, 0.0333, 0.0315, 0.0301, 0.0289]
+# tempVec = [0.1]
+iters = 1000        # Iteracoes
+N = 1000            # Tamanho do conj de dados
+numStates = 5       # Num de Estados
+bins = [-0.2, 0.2, 0.8, 1.2, 1.8, 2.2, 2.8, 3.2, 3.8, 4.2]
+
 # T = 0.1
-#
-# X = np.empty((N, iters))
-# X[:, 0] = np.random.randint(0, 5, size=N)  # Inicializar X[0]
-#
-# for i in range(0, iters+1):
-#     # Perturbation of X[i]
-#     x_new = perturb(X[:,i], t)
-#     X[:, i+1] = np.random.choice(t, size=N, p=)
-#     X[:,i+1] = get_random_event(M[x_new,:], x_new)
-#
-#     # if np.mod(i, M) == 0:
-#     #     T = T_0/(np.log2(1 + k))
-#     #     k = k+1
-#
-# bins = [-0.2, 0.2, 0.8, 1.2, 1.8, 2.2, 2.8, 3.2, 3.8, 4.2]
-# plt.hist(X[0, :], bins=bins)
-# plt.set_title("Distribuição final para T = ", T)
-# plt.set_ylabel("Contagem")
-# plt.hist(X[-1, :], bins=bins)
+
+X = np.empty((N, iters, len(tempVec)), dtype=int)
+X[:, 0, 0] = np.random.randint(0, numStates, size=N)  # Inicializar X[0]
+
+for temp in range(len(tempVec)):
+    T = tempVec[temp]
+    print("Temp: ", T)
+    for i in range(0, iters-1):
+        # Perturbation of X[i]
+        # randPos = np.random.randint(0, N)
+        # newVal = np.random.randint(0, numStates)
+        #
+        # oldVal = X[randPos, i, temp]
+        #
+
+        xNew = np.random.randint(0, numStates, size=N)
+        J_New = list(map(J_func, xNew))
+        J_Old = list(map(J_func, X[:, i, temp]))
+        diff = np.subtract(J_New, J_Old) # J_new - J_old elementwise
+
+        for elem in range(N):
+            randomNum = random.random()
+            acceptProb = metropolis_prob(J_Old[elem], J_New[elem], T)
+
+            if randomNum < acceptProb:
+                X[elem, i+1, temp] = xNew[elem]
+                # print("Estado aceito")
+            else:
+                X[elem, i+1, temp] = X[elem, i, temp]
+                # print("Estado rejeitado")
+
+        # print("\nJ_Old: {}\nJ_New: {}".format(J[oldVal], J[newVal]))
+        # print("Accept prob: {}".format(acceptProb))
+        # print("Random number: {:.3f}".format(randomNum))
+        # randomNum = random.random()
+        # acceptProb = metropolis_prob(J[oldVal], J[newVal], T)
+        #
+        #
+        # if randomNum < acceptProb:
+        #     X[:, i+1, temp] = xNew
+        #     # print("Estado aceito")
+        # else:
+        #     X[:, i+1, temp] = X[:, i, temp]
+        #     # print("Estado rejeitado")
+
+    # if (temp+1) < len(tempVec):
+    #     X[:, 0, temp+1] = X[:, i+1, temp]
+
+## Plot results
+fig, axs = plt.subplots(2,1, sharey=True)
+
+bins = [-0.2, 0.2, 0.8, 1.2, 1.8, 2.2, 2.8, 3.2, 3.8, 4.2]
+
+axs[0].hist(X[:, iters-1, 0], bins=bins)
+axs[0].set_title("Distribuição iter {} para T = {}".format(iters, tempVec[0]))
+axs[0].set_ylabel("Contagem")
+
+axs[1].hist(X[:, iters-1, -1], bins=bins)
+axs[1].set_title("Distribuição iter {} para T = {}".format(iters, tempVec[-1]))
+axs[1].set_ylabel("Contagem")
+axs[1].set_xlabel("Estado")
+
+plt.suptitle("Histograma de X(t), N = {}".format(N), fontsize=14)
+
+plt.show()

@@ -37,9 +37,28 @@ def transition_matrix(J, T):
     for i in range(numStates):
         for j in range(numStates):
             if i != j:
-                transitionMatrix[i][j] = (1/numStates)*np.exp(-(J[i] - J[j])/T)
+                transitionMatrix[i][j] = np.exp(-(J[i] - J[j])/T)
+                # transitionMatrix[i][j] *= (1/numStates) # Generator probabilty
 
     for j in range(numStates):
         transitionMatrix[j][j] = 1 - np.sum(transitionMatrix[:][j])
 
     return transitionMatrix
+
+def metropolis_prob(J_Old, J_New, T):
+    '''
+    Compute state acceptance probabilty, according to Metropolis algorithm
+    Args:
+        J_Old:  Current state energy/cost
+        J_New:  Candidate state energy
+        T:      Temperature
+    Returns:
+        prob: acceptance probabilty
+    '''
+    diff = J_New - J_Old
+    if diff < 0:
+        prob = 1
+    else:
+        prob = np.exp(-(diff)/T)
+
+    return prob
