@@ -14,7 +14,7 @@ from utils import get_random_event, perturb
 np.set_printoptions(precision=3, suppress=True)
 
 # Letra A
-M =[[0,     np.exp(-3),     np.exp(-2),     np.exp(-4),              np.exp(-1)],
+M =[[0,     np.exp(-3),     np.exp(-2),     np.exp(-4),     np.exp(-1)],
     [1,     0,              1,              np.exp(-1),     1],
     [1,     np.exp(-1),     0,              np.exp(-2),     1],
     [1,     1,              1,              0,              1],
@@ -76,17 +76,26 @@ print("\nDiferença\n", np.abs(fatoresBoltz-piVec))
 # T = [0.1000, 0.0631, 0.0500, 0.0431, 0.0387, 0.0356, 0.0333, 0.0315, 0.0301, 0.0289]
 iters = 1000    # Iteracoes
 N = 1000    # Tamanho do conj de dados
-t = 5       # Num de Estados
+numStates = 5       # Num de Estados
 T = 0.1
 
 X = np.empty((N, iters))
-X[:, 0] = np.random.randint(0, 5, size=N)  # Inicializar X[0]
+X[:, 0] = np.random.randint(0, numStates, size=N)  # Inicializar X[0]
 
 for i in range(0, iters+1):
     # Perturbation of X[i]
-    x_new = perturb(X[:,i], t)
-    X[:, i+1] = np.random.choice(t, N, p=[])
-    X[:,i+1] = get_random_event(M[x_new,:], x_new)
+    randPos = np.random.randint(0, N)
+    oldVal = X[randPos, i]
+
+    newVal = np.random.randint(0, numStates)
+    xNew = X[:, i]
+    xNew[randPos] = newVal
+
+    randomNum = random.random()
+    if randomNum >= M[oldVal, newVal]:
+        X[:, i+1] = xNew
+    else:
+        X[:, i+1] = X[:, i]
 
     # if np.mod(i, M) == 0:
     #     T = T_0/(np.log2(1 + k))
