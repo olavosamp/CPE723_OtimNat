@@ -19,3 +19,17 @@ def perturb(x, states):
     print(x.shape)
     print(randVec.shape)
     return x + randVec
+
+def transition_matrix(J, T):
+    '''
+    Compute transition matrix for the discrete Metropolis algorithm of a function J(x).
+    Arguments:
+        J: Size N vector of cost values for N unique states. Each element should correspond to J(x) at the given state.
+        T: temperature at which the matrix is to be calculated.
+    Returns:
+        M: NxN square Transition matrix for temperature T.
+    '''
+
+    # CALC m
+
+    return M

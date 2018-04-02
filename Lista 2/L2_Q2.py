@@ -69,31 +69,31 @@ print("Fatores de Boltz normalizados\n", fatoresBoltz)
 print("\nVetor invariante\n", piVec)
 print("\nDiferença\n", np.abs(fatoresBoltz-piVec))
 
-# Letra E
-# Executar SA usando a matriz de transição
-
-# Vetor de temperaturas
-# T = [0.1000, 0.0631, 0.0500, 0.0431, 0.0387, 0.0356, 0.0333, 0.0315, 0.0301, 0.0289]
-iters = 1000    # Iteracoes
-N = 1000    # Tamanho do conj de dados
-t = 5       # Num de Estados
-T = 0.1
-
-X = np.empty((N, iters))
-X[:, 0] = np.random.randint(0, 5, size=N)  # Inicializar X[0]
-
-for i in range(0, iters+1):
-    # Perturbation of X[i]
-    x_new = perturb(X[:,i], t)
-    X[:, i+1] = np.random.choice(t, N, p=[])
-    X[:,i+1] = get_random_event(M[x_new,:], x_new)
-
-    # if np.mod(i, M) == 0:
-    #     T = T_0/(np.log2(1 + k))
-    #     k = k+1
-
-bins = [-0.2, 0.2, 0.8, 1.2, 1.8, 2.2, 2.8, 3.2, 3.8, 4.2]
-plt.hist(X[0, :], bins=bins)
-plt.set_title("Distribuição final para T = ", T)
-plt.set_ylabel("Contagem")
-plt.hist(X[-1, :], bins=bins)
+# # Letra E
+# # Executar SA usando a matriz de transição
+#
+# # Vetor de temperaturas
+# # T = [0.1000, 0.0631, 0.0500, 0.0431, 0.0387, 0.0356, 0.0333, 0.0315, 0.0301, 0.0289]
+# iters = 1000    # Iteracoes
+# N = 1000    # Tamanho do conj de dados
+# t = 5       # Num de Estados
+# T = 0.1
+#
+# X = np.empty((N, iters))
+# X[:, 0] = np.random.randint(0, 5, size=N)  # Inicializar X[0]
+#
+# for i in range(0, iters+1):
+#     # Perturbation of X[i]
+#     x_new = perturb(X[:,i], t)
+#     X[:, i+1] = np.random.choice(t, size=N, p=)
+#     X[:,i+1] = get_random_event(M[x_new,:], x_new)
+#
+#     # if np.mod(i, M) == 0:
+#     #     T = T_0/(np.log2(1 + k))
+#     #     k = k+1
+#
+# bins = [-0.2, 0.2, 0.8, 1.2, 1.8, 2.2, 2.8, 3.2, 3.8, 4.2]
+# plt.hist(X[0, :], bins=bins)
+# plt.set_title("Distribuição final para T = ", T)
+# plt.set_ylabel("Contagem")
+# plt.hist(X[-1, :], bins=bins)
