@@ -14,11 +14,13 @@ def get_random_event(events, random_number):
 
 # Create a perturbation in a state vector X with N possible states
 def perturb(x, states):
-
-    randVec = np.random.randint(0, states, size=np.shape(x))
-    print(x.shape)
-    print(randVec.shape)
-    return x + randVec
+    randPos = np.random.randint(0, len(x))
+    randVal = np.random.randint(0, states)
+    # print(x.shape)
+    # print(randVec.shape)
+    xNew = x
+    xNew[randPos] = randVal
+    return xNew
 
 def transition_matrix(J, T):
     '''
@@ -29,7 +31,15 @@ def transition_matrix(J, T):
     Returns:
         M: NxN square Transition matrix for temperature T.
     '''
+    numStates = len(J)
+    transitionMatrix = np.zeros(numStates)
 
-    # CALC m
+    for i in range(numStates):
+        for j in range(numStates):
+            if i != j:
+                transitionMatrix[i][j] = (1/numStates)*np.exp(-(J[i] - J[j])/T)
 
-    return M
+    for j in range(numStates):
+        transitionMatrix[j][j] = 1 - np.sum(transitionMatrix[:][j])
+
+    return transitionMatrix

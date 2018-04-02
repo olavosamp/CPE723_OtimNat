@@ -14,7 +14,7 @@ from utils import get_random_event, perturb
 np.set_printoptions(precision=3, suppress=True)
 
 # Letra A
-M =[[0,     np.exp(-3),     np.exp(-2),     np.exp(-4),              np.exp(-1)],
+M =[[0,     np.exp(-3),     np.exp(-2),     np.exp(-4),     np.exp(-1)],
     [1,     0,              1,              np.exp(-1),     1],
     [1,     np.exp(-1),     0,              np.exp(-2),     1],
     [1,     1,              1,              0,              1],
