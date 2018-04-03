@@ -10,9 +10,10 @@ import matplotlib.pyplot    as plt
 
 import utils
 
-np.set_printoptions(precision=3, suppress=True)
+np.set_printoptions(precision=3)
 
 ## Letra A
+print("\nLetra A:")
 
 # X = np.array([0, 4, 6, 9], dtype=int)
 X = np.array([0, 4, 6, 9])
@@ -33,7 +34,8 @@ i = 0
 #
 #     # print("\ni: {}, t : {:.1f}\nD: {:.3f}".format(i, partition, D[i]))
 #     i += 1
-#
+
+
 # plt.plot(t, D)
 # # plt.set_title("Gráfico de D(t)")
 # plt.ylabel("D(t)")
@@ -41,9 +43,25 @@ i = 0
 # plt.show()
 
 ## Letra B
+print("\nLetra B:")
 
 y = np.array([3.0, 3.4])
-T = 1.0
+numCentroids = 2
+T = 1
+print("T = ", T)
+
 P_yx = utils.prob_yx(X, y, T)
 
 print(P_yx)
+
+## Letra C
+print("\nLetra C:")
+
+D = utils.cluster_cost(P_yx, X, y)
+
+print("\nD = {}".format(D))
+
+## Letra D
+
+yNew = utils.centroid_update(P_yx, X, numCentroids)
+print("\nLetra D:\nNovos centroides: {}".format(yNew))
