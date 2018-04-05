@@ -27,8 +27,8 @@ i = 0
 #     y1 = utils.center_mass(X1)
 #     y2 = utils.center_mass(X2)
 #
-#     dist1 = np.sum(utils.rms_error(X1, y1))
-#     dist2 = np.sum(utils.rms_error(X2, y2))
+#     dist1 = np.sum(utils.squared_dist(X1, y1))
+#     dist2 = np.sum(utils.squared_dist(X2, y2))
 #
 #     D[i] = (dist1+dist2)/(len(X1)+len(X2))
 #
@@ -48,11 +48,14 @@ print("\nLetra B:")
 y = np.array([3.0, 3.4])
 numCentroids = 2
 T = 1
+
 print("T = ", T)
 
 P_yx = utils.prob_yx(X, y, T)
 
-print(P_yx)
+print("\nP_y|x:\n", P_yx)
+print(np.sum(P_yx, 0))
+# print(P_yx[0,:])
 
 ## Letra C
 print("\nLetra C:")
@@ -62,6 +65,14 @@ D = utils.cluster_cost(P_yx, X, y)
 print("\nD = {}".format(D))
 
 ## Letra D
-
+print("\nLetra D:\n")
 yNew = utils.centroid_update(P_yx, X, numCentroids)
-print("\nLetra D:\nNovos centroides: {}".format(yNew))
+print("Novos centroides: {}".format(yNew))
+
+# print("Conferir")
+#
+# y1 = np.sum(X*P_yx[0,:])/np.sum(P_yx[0,:])
+# y2 = np.sum(X*P_yx[1,:])/np.sum(P_yx[1,:])
+#
+# print("\ny1: ", y1)
+# print("y2: ", y2)
