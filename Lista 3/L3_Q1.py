@@ -68,11 +68,3 @@ print("\nD = {}".format(D))
 print("\nLetra D:\n")
 yNew = utils.centroid_update(P_yx, X, numCentroids)
 print("Novos centroides: {}".format(yNew))
-
-# print("Conferir")
-#
-# y1 = np.sum(X*P_yx[0,:])/np.sum(P_yx[0,:])
-# y2 = np.sum(X*P_yx[1,:])/np.sum(P_yx[1,:])
-#
-# print("\ny1: ", y1)
-# print("y2: ", y2)
