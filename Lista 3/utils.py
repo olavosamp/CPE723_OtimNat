@@ -1,10 +1,24 @@
 import numpy as np
 
 np.set_printoptions(precision=3)
-#
+
 def squared_dist(x, y):
     dist = x - y
+    if dist.size > 1:
+        dist = np.sum(dist)
     dist = np.power(dist, 2)
+    return dist
+
+def dist_matrix(x, y):
+    '''
+    x: N by M matrix
+    y: N by C matrix
+
+    dist: M by C distance matrix
+    '''
+
+
+
     return dist
 
 def center_mass(x):
@@ -33,15 +47,19 @@ def prob_yx(x, y, T):
     else:
         C = np.shape(y)[1]
 
-
+    # print(x[:, 0])
+    # print(y[:,0]/T)
     # Compute P_y|x
     P = np.zeros((C, M))
     for l in range(C):
         for k in range(M):
-            P[l, k] = np.exp(-squared_dist(x[:,k], y[:,l])/T)  # P_(y_l)|(x_k)
+            P[l, k] = (np.exp(-squared_dist(x[:,k], y[:,l])/T))  # P_(y_l)|(x_k)
 
+    print("P shape: ", P.shape)
     w = np.sum(P, 0)       # Normalization factor w
-    P = np.divide(P, w)    # Normalize each column
+    print("w shape: ", w.shape)
+    # w = np.reshape(np.tile(w, M), (C, M))
+    P = P/w    # Normalize each column
 
     return P
 
@@ -85,6 +103,7 @@ def cluster_cost(P, x, y):
             # print("dist(x_{}, y_{}) = dist(x_{}, y_{}): {}".format(k, l, x[:, k], y[:, l], current))
 
     cost *= prob_x
+    cost = np.sum(cost)
     return cost
 
 def centroid_update(P, x, C):

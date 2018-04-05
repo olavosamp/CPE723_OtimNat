@@ -6,7 +6,6 @@
 
 import numpy                as np
 import matplotlib.pyplot    as plt
-# import random
 
 import utils
 
@@ -16,10 +15,10 @@ np.set_printoptions(precision=3)
 print("\nLetra A:")
 
 # X = np.array([0, 4, 6, 9], dtype=int)
-X = np.array([0, 4, 6, 9])
-t = np.arange(-1.0, 10.0, 0.1)
-D = np.empty(len(t))
-i = 0
+X = np.array([[0, 4, 6, 9], [0, 4, 6, 9]])
+# t = np.arange(-1.0, 10.0, 0.1)
+# D = np.empty(len(t))
+# i = 0
 # for partition in t:
 #     X1 = [elem for elem in X if elem <= partition]
 #     X2 = [elem for elem in X if elem > partition]
@@ -34,8 +33,8 @@ i = 0
 #
 #     # print("\ni: {}, t : {:.1f}\nD: {:.3f}".format(i, partition, D[i]))
 #     i += 1
-
-
+#
+#
 # plt.plot(t, D)
 # # plt.set_title("Gráfico de D(t)")
 # plt.ylabel("D(t)")
@@ -45,9 +44,9 @@ i = 0
 ## Letra B
 print("\nLetra B:")
 
-y = np.array([3.0, 3.4])
+y = np.array([[3.0, 3.4], [3.0, 3.4]])
 numCentroids = 2
-T = 1
+T = 50
 
 print("T = ", T)
 
