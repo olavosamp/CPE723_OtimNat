@@ -40,30 +40,26 @@ tempVec = [100, 80, 70, 40, 10, 1]
 epsilon = 0.001
 y = np.random.random(np.shape(clusterCenters)).T    # Choose random initial centroids
 
-for T in tempVec:
-    P_yx  = utils.prob_yx(X_all, y, T)
-    initD = utils.cluster_cost(P_yx, X_all, y)
-    D = [0, initD]
-    print("\nT = ", T)
-    print("\nInitial centroids: ", y)
-    print("\nInitial cost: ", D[-1])
-    while(np.abs(D[-1] - D[-2]) > epsilon):
-        # Conditional probabilty matrix P_y|x
-        P_yx = utils.prob_yx(X_all, y, T)
+P_yx  = utils.prob_yx(X_all, y, T)
+initD = utils.cluster_cost(P_yx, X_all, y)
+D = [0, initD]
+print("\nT = ", T)
+print("\nInitial centroids: ", y)
+print("\nInitial cost: ", D[-1])
+while(np.abs(D[-1] - D[-2]) > epsilon):
+    # Conditional probabilty matrix P_y|x
+    P_yx = utils.prob_yx(X_all, y, T)
 
-        # print("P_y|x:\n", P_yx)
-        print(np.sum(P_yx, 0))
+    # print("P_y|x:\n", P_yx)
+    print(np.sum(P_yx, 0))
 
-        # Update centroids
-        y = utils.centroid_update(P_yx, X_all, numClusters)
+    # Update centroids
+    y = utils.centroid_update(P_yx, X_all, numClusters)
 
-        # Re-calculate cost function
-        D.append(utils.cluster_cost(P_yx, X_all, y))
-        print("\nIteration {}. Cost: {:.5f}".format(len(D)-2, D[-1]))
-        print("P_yx shape: ", P_yx.shape)
-
-        # print("\nNew centroids: \n", y)
-        # print("Cost: ", D[-1])
+    # Re-calculate cost function
+    D.append(utils.cluster_cost(P_yx, X_all, y))
+    print("\nIteration {}. Cost: {:.5f}".format(len(D)-2, D[-1]))
+    print("P_yx shape: ", P_yx.shape)
 
 print("\nFinal cost: \n", D[-1])
 print("\nTrue centroids\n", clusterCenters)

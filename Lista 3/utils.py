@@ -4,9 +4,8 @@ np.set_printoptions(precision=3)
 
 def squared_dist(x, y):
     dist = x - y
-    if dist.size > 1:
-        dist = np.sum(dist)
     dist = np.power(dist, 2)
+    dist = np.sum(dist)
     return dist
 
 def dist_matrix(x, y):
