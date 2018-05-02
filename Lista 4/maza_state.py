@@ -1,5 +1,6 @@
 import numpy    as np
 import pandas   as pd
+from tqdm import tqdm
 
 def flipBit(bit):
     if bit == "0":
@@ -15,8 +16,12 @@ def recombineAB(parentA, parentB, percentA=0.5):
 
     cut = int(round(len(parentA)*percentA))
     child = parentA[:cut] + parentB[cut:]
-    print(len(child))
     return child
+
+def compute_aptitudes(popList):
+    aptList = list(map(lambda x: x.aptitude(), popList["State"]))
+    popList["Aptitude"] = aptList
+    return popList
 
 class mazaState:
     """
@@ -69,7 +74,7 @@ class mazaState:
             mutateProb = 1.0
 
         randomNum = np.random.rand()
-
+        newBinVal = 0
         if randomNum < mutateProb:
             mutatePos = np.random.randint(0, self.bitLen-1)
             newBinVal = self.binVal[:mutatePos] + flipBit(self.binVal[mutatePos]) + self.binVal[mutatePos+1:]
@@ -82,7 +87,7 @@ class mazaPop:
         Maza-Population class
     '''
     def __init__(self, size=50):
-        self.numParents = 10    # Number of parents selected. Must be pair
+        self.numParents = 20    # Number of parents selected. Must be pair
         self.mutateProb = 0.01
         self.newPop     = []
         self.size       = 50
@@ -95,33 +100,59 @@ class mazaPop:
 
         aptList = np.zeros(self.size)
         self.popList = pd.DataFrame(data={"State":stateList, "Aptitude":aptList})
-        self.popList = self.compute_aptitudes(self.popList)
+        self.popList = compute_aptitudes(self.popList)
 
-    def compute_aptitudes(self, popList):
-        aptList = list(map(lambda x: x.aptitude(), popList["State"]))
-        popList["Aptitude"] = aptList
-        return popList
 
     def select_parents(self):
-        self.popList = self.popList.sort_values("Aptitude", ascending=False)
-        parents = self.popList.iloc[:self.numParents, :]
-        return parents
+        aptSum = self.popList["Aptitude"].sum()
+        probList = pd.DataFrame({"Probabilities": self.popList["Aptitude"].div(aptSum)})
+        candidateList = pd.concat([self.popList, probList], axis=1)
 
-    def recombination(self, parents):
+        popSize = len(candidateList)
+        parents = []
+        while (len(parents) < self.numParents):
+            for i in range(popSize):
+                randomNum = np.random.rand()
+                if (candidateList.loc[i, "Probabilities"] > randomNum) and (len(parents) < self.numParents):
+                    parents.append(candidateList.loc[i, :])
+
+        return pd.DataFrame(parents)
+
+    def recombination(self, parents, numChildren=2):
         # Shuffle parents list
-        parents = parents.sample(frac=1.0)
+        parents = parents.sample(frac=1.0).reset_index(drop=True)
+        parents = parents["State"]
+        parentsLen = len(parents)
 
         childList = []
         for i in range(int(self.numParents/2)):
-            newChild = recombineAB(parents[i], parents[-i])
-            childList.append(newChild)
+            parentA = parents[i].binVal
+            parentB = parents[parentsLen-i-1].binVal
+            for j in range(numChildren):
+                newChild = mazaState(binVal=recombineAB(parentA, parentB))
+                childList.append(newChild)
 
-        self.newPop = pd.DataFrame(data={"State":childList, "Aptitude":np.zeros(self.size)})
-        self.newPop = pd.concatenate
+        # print(childList)
+        self.newPop = pd.DataFrame(data={"State":childList, "Aptitude":np.zeros(len(childList))})
+        self.newPop = compute_aptitudes(self.newPop)
         return self.newPop
 
     def survivor_selection(self):
-        self.newPop  = self.compute_aptitudes(self.newPop)
+        self.newPop  = compute_aptitudes(self.newPop)
         self.newPop  = self.newPop.sort_values("Aptitude", ascending=False)
-        self.popList = self.newPop.iloc[:self.size, :]
+        self.popList = self.newPop.iloc[:self.size, :].reset_index(drop=True)
+        return self.popList
+
+    def mutation(self, mutateProb=0.01):
+        for i in range(len(self.newPop)):
+            self.newPop.loc[i, "State"].mutate(mutateProb)
+        return self.newPop
+
+    def generation(self):
+        parents = self.select_parents()
+        self.recombination(parents, numChildren=2)
+        self.newPop = pd.concat([self.newPop, self.popList]).reset_index(drop=True)
+        self.mutation(mutateProb=0.01)
+        self.survivor_selection()
+
         return self.popList
