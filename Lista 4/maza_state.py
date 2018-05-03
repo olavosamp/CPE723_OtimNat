@@ -1,6 +1,6 @@
 import numpy    as np
 import pandas   as pd
-from tqdm import tqdm
+# from tqdm import tqdm
 
 def flipBit(bit):
     if bit == "0":
@@ -65,7 +65,7 @@ class mazaState:
         x = self.intVal
         # print(x)
         apt = x**2 - 0.3*np.cos(10*np.pi*x)
-        return apt
+        return -apt
 
     def mutate(self, mutateProb=0.02):
         if mutateProb < 0:
