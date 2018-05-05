@@ -4,13 +4,18 @@ from mpl_toolkits.mplot3d   import Axes3D
 # from tqdm                   import tqdm
 
 from maza_state import (mazaState,
-                        mazaPop,
-                        recombineAB,
-                        ackley)
+                        mazaPop)
 
 numGenerations = 10
-sizePop = 10
+sizePop = 50
 
+tau1 = 1/(np.sqrt(2*sizePop))
+tau2 = 1/(np.sqrt(2*np.sqrt(sizePop)))
+
+state1 = mazaState()
+
+print(state1.val)
+print(state1.mutate(tau1, tau2))
 # pop1 = mazaPop(size=sizePop)
 # popGen = []
 # for i in tqdm(range(numGenerations)):

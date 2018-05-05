@@ -37,21 +37,28 @@ def compute_aptitudes(popList):
 class mazaState:
     """
         maza-State/specimen class
+
+        val: 1 by 2 x ndims vector. First ndims elements are floating point state values, x_i.
+            Last ndims elements are mutation rates, sigma_i.
+
+            val = [x_0, x_1, ... x_i, sigma_1, ... , sigma_i]
+
     """
-    def __init__(self, val=0.0, randomize=True, self.ndims=2):
-        if ndims > 0:
+    def __init__(self, val=0.0, randomize=True, ndims=2, sigmaLimit=0.0001):
+        self.sigmaLimit = sigmaLimit
+        if ndims > 1:
             self.ndims = ndims
         else:
-            raise ValueError("ndims must be greater than 0")
+            raise ValueError("ndims must be greater than 1")
 
         if not(randomize):
             if len(val) == 2*self.ndims:
                 self.setVal(val)
             else:
-
+                raise ValueError("Value must agree with ndims")
         else:
             # If randomize is True, randomly initialize state
-            self.randomState(ndims=self.ndims)
+            self.randomState()
 
     # def bin2int(self, binVal):
     #     bits    = len(binVal[2:])
@@ -69,7 +76,7 @@ class mazaState:
             # Set value if it has correct dimensions
             self.val = val
         else:
-            raise ValueError("Value must be a vector of lenght {}, but received length {}".format(self.ndims, len(val)))
+            raise ValueError("Value must be a vector of lenght {}, but received length {}".format(2*self.ndims, len(val)))
         return self.val
 
     def randomState(self):
@@ -81,7 +88,21 @@ class mazaState:
         apt = ackley(self.val[0], self.val[1])
         return -apt
 
-    def mutate(self, mutateProb=0.02, alpha=0.01):
+    def mutate(self, tau1, tau2, mutateProb=1.0):
+        '''
+            Apply gaussian perturbation to state values as follows:
+                x_i_new     = x_i + sigma_i * gauss1_i
+                sigma_i_new = sigma_i * exp(tau1 * gaussNoise) * exp(tau2 * gauss2_i)
+
+            Where:
+                gauss_i are gaussian samples generated for each element
+                gaussNoise is gaussian noise used for all elements
+
+                tau1 = 1/sqrt(2*n)
+                tau2 = 1/sqrt(2*sqrt(n))
+                    Where n is population size
+        '''
+        # Evolutionary Strategy algorithms always perform mutation
         if mutateProb < 0:
             raise ValueError("Mutate probability must be a number between 0 and 1")
         if mutateProb > 1:
@@ -89,9 +110,21 @@ class mazaState:
 
         randomNum = np.random.rand()
         if randomNum < mutateProb:
-            mutateNoise =
-            newval =
-            self.setVal(newval)
+            # Sigma mutation
+            gaussNoise = np.random.normal()
+            sigmaNoise = np.random.normal(size=self.ndims)
+            print("\nsigmaNoise shape: ", sigmaNoise.shape)
+            newSigma = self.val[:self.ndims]*np.exp(tau1*gaussNoise)*np.exp(tau2*sigmaNoise)
+            print("\nnewSigma shape: ", newSigma.shape)
+
+            # State mutation
+            stateNoise = np.random.normal(size=self.ndims)
+            print("\nstateNoise shape: ", stateNoise.shape)
+            newState = self.val[:self.ndims] + newSigma*stateNoise
+            print("\nnewState shape: ", newState.shape)
+            newVal = np.array([newState, newSigma])
+
+            self.setVal(newVal)
 
         return newval
 
