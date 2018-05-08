@@ -9,6 +9,12 @@ X, Y = np.meshgrid(x1, x2)
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(X, Y, ackley(X, Y), cmap='ocean')
+
+Z = np.zeros((len(X), len(Y)))
+for i in range(len(X)):
+    for j in range(len(Y)):
+        Z[i,j] = ackley([X[i,j], Y[i,j]])
+
+ax.plot_surface(X, Y, Z, cmap='ocean')
 
 plt.show()

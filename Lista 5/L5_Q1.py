@@ -3,20 +3,44 @@ import matplotlib.pyplot    as plt
 from mpl_toolkits.mplot3d   import Axes3D
 from tqdm                   import tqdm
 
-from maza_state import (mazaState,
-                        mazaPop)
+from maza_state             import (mazaState,
+                                    mazaPop)
 
 numGenerations = 25
 sizePop = 30
+ndims = 30
 
-numRuns = 1
+numRuns = 10
 bestFitOverall = []
+fitEvals       = np.zeros(numRuns)
+genCount       = np.zeros(numRuns)
 for j in range(numRuns):
-    pop1 = mazaPop(size=sizePop, initRange=60)
+    pop1 = mazaPop(size=sizePop, initRange=60, ndims=ndims)
 
     popGen = []
+
+    # ## Run generations until convergence
+    # tol      = 0.0001
+    # patience = 0
+    # fitOld   = 1000
+    # while patience < 10:
+    #     popGen.append(pop1.generation())
+    #     fitNew = pop1.popList["Aptitude"].mean()
+    #
+    #     if np.abs(fitNew - fitOld) < tol:
+    #         patience += 1
+    #     else:
+    #         patience = 0
+    #
+    #     fitOld = fitNew
+
+    ## Run a specified number of generations
     for i in tqdm(range(numGenerations)):
         popGen.append(pop1.generation())
+
+    # Record number of generations and fitness evaluations
+    genCount[j] = len(popGen)
+    fitEvals[j] = pop1.fitEvals
 
     bestFit = []
     popMean = []
@@ -27,12 +51,15 @@ for j in range(numRuns):
     bestFitOverall.append(bestFit[-1])
 
     print("\n\nRun ", j)
+    print("Run for {} generations".format(len(popGen)))
     print("Best Fitness: {:.3f}".format(bestFit[-1]))
     print("Mean Fitness: {:.3f}".format(popMean[-1]))
 
 print("\nStatistics of {} runs".format(numRuns))
 print("Best Fitness Mean: {:.3f}".format(np.mean(bestFitOverall)))
 print("Best Fitness Std : {:.3f}".format(np.std(bestFitOverall)))
+print("Mean number of Generations until convergence         : {:.2f}".format(np.mean(genCount)))
+print("Mean number of fitness evaluations until convergence : {:.2f}".format(np.mean(fitEvals)))
 
 plt.plot(bestFit, 'r', label="Best Fitness")
 plt.plot(popMean, 'b', label="Mean Fitness")

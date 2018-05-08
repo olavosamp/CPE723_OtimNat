@@ -1,5 +1,6 @@
 import numpy    as np
 import pandas   as pd
+from q1 import roundRobin
 # from tqdm import tqdm
 
 # def flipBit(bit):
@@ -10,13 +11,17 @@ import pandas   as pd
 #     else:
 #         raise ValueError("Argument must be a string value of 0 or 1")
 
-def ackley(x, y):
+def ackley(x):
     '''
-    Benchmark Ackley Function
+    n-dimensional Ackley Cost Function
+
+    x is the 1 by ndims input vector
     '''
-    arg1 = -0.2 * np.sqrt(0.5 * (x ** 2 + y ** 2))
-    arg2 = 0.5 * (np.cos(2. * np.pi * x) + np.cos(2. * np.pi * y))
-    return -20. * np.exp(arg1) - np.exp(arg2) + 20. + np.e
+    x = np.array(x)
+    arg1 = -0.2*np.sqrt(np.mean(x*x))
+    arg2 = np.mean(np.cos(2*np.pi*x))
+
+    return -20.*np.exp(arg1) - np.exp(arg2) + 20. + np.e
 
 def crossover_1_point(parentA, parentB, percentA=0.5):
     '''
@@ -29,10 +34,6 @@ def crossover_1_point(parentA, parentB, percentA=0.5):
     child = parentA[:cut] + parentB[cut:]
     return child
 
-def compute_aptitudes(popList):
-    aptList = list(map(lambda x: x.aptitude(), popList["State"]))
-    popList["Aptitude"] = aptList
-    return popList
 
 class mazaState:
     """
@@ -59,7 +60,7 @@ class mazaState:
                 raise ValueError("Value must agree with ndims")
         else:
             # If randomize is True, randomly initialize state
-            self.randomState()
+            self.randomState(initRange)
 
     # Set val attribute
     def setVal(self, val):
@@ -78,7 +79,7 @@ class mazaState:
 
     ## Compute state aptitude
     def aptitude(self):
-        apt = ackley(self.val[0], self.val[1])
+        apt = ackley(self.val[:self.ndims])
         return -apt
 
     ## Randomly alter state and sigma values
@@ -124,11 +125,12 @@ class mazaPop:
         Maza-Population class
     '''
     ## Constructor
-    def __init__(self, size=50, seed=0, initRange=2.0):
+    def __init__(self, size=50, seed=0, initRange=2.0, ndims=2):
         self.mutateProb = 1.0
-        # self.numSurvivors = 50
+        self.fitEvals   = 0
         self.newPop     = []
 
+        # Compute sigma mutation parameters
         self.tau1 = 1/(np.sqrt(2*size))
         self.tau2 = 1/(np.sqrt(2*np.sqrt(size)))
 
@@ -139,12 +141,28 @@ class mazaPop:
         self.size = size
         stateList = []
         for i in range(self.size):
-            stateList.append(mazaState(randomize=True, initRange=initRange))
+            stateList.append(mazaState(randomize=True, initRange=initRange, ndims=ndims))
 
         aptList = np.zeros(self.size)
         self.popList = pd.DataFrame(data={"State":stateList, "Aptitude":aptList})
+
         # Compute aptitude list via corresponding function
-        self.popList = compute_aptitudes(self.popList)
+        self.popList = self.compute_aptitudes(self.popList)
+
+        # print(self.popList.loc[0, "State"].val)
+        # input()
+
+
+    def compute_aptitudes(self, popList):
+        # Compute fitness for every state
+        aptList = list(map(lambda x: x.aptitude(), popList["State"]))
+        popList["Aptitude"] = aptList
+
+        # Increment number of fitness evaluations
+        self.fitEvals += len(popList)
+
+        return popList
+
 
     ## Parent Selection
     def select_parents(self):
@@ -160,7 +178,7 @@ class mazaPop:
             Population list to be selected is the entire list of parents plus offspring.
         '''
 
-        self.newPop  = compute_aptitudes(self.newPop)
+        self.newPop  = self.compute_aptitudes(self.newPop)
         self.newPop  = self.newPop.sort_values("Aptitude", ascending=False)
         self.popList = self.newPop.iloc[:self.size, :].reset_index(drop=True)
         return self.popList
@@ -176,7 +194,7 @@ class mazaPop:
 
             After the Tournament ends, the highest scoring specimens are selected until population size is filled.
         '''
-        winScore  = +1
+        winScore  = +3
         drawScore =  0
         loseScore = -1
 
@@ -190,22 +208,15 @@ class mazaPop:
             currList = np.ones(numPlays)*tourneyPop.loc[i    , "Aptitude"]
             oppList  = tourneyPop.loc[opponents, "Aptitude"].values
 
+            # Score of current contestant
             scoreList = np.zeros(numPlays)
-            scoreList += np.where(currList > oppList, winScore, 0)
-            scoreList += np.where(currList < oppList, loseScore, 0)
+            scoreList += np.where(currList > oppList, winScore, drawScore)
+            scoreList += np.where(currList < oppList, loseScore, drawScore)
 
-            tourneyPop.loc[i, "Score"] = np.sum(scoreList)
+            # Score of opponents
 
-            # for index in opponents:
-            #     if index != i:
-            #         current  = tourneyPop.loc[i    , "Aptitude"]
-            #         opponent = tourneyPop.loc[index, "Aptitude"]
-            #         if current > opponent:
-            #             tourneyPop.loc[i, "Score"] += winScore
-            #         elif current < opponent:
-            #             tourneyPop.loc[i, "Score"] += loseScore
-            #         else:
-            #             tourneyPop.loc[i, "Score"] += drawScore
+
+            tourneyPop.loc[i, "Score"] += np.sum(scoreList)
 
         tourneyPop   = tourneyPop.sort_values("Score", ascending=False)
         self.popList = tourneyPop.iloc[:self.size, :2].reset_index(drop=True)
@@ -221,6 +232,9 @@ class mazaPop:
 
         self.newPop = population
 
+        # Update aptitudes
+        self.newPop = self.compute_aptitudes(self.newPop)
+
         return self.newPop
 
     def generation(self):
@@ -231,8 +245,10 @@ class mazaPop:
         self.mutation(parents, mutateProb=self.mutateProb)
         self.newPop = pd.concat([self.newPop, self.popList]).reset_index(drop=True)
 
-        self.survivor_selection_n_best()
-        # self.survivor_selection_tourney()
+        # self.survivor_selection_n_best()
+        self.survivor_selection_tourney()
+        # scores = roundRobin(self.newPop["Aptitude"].values)
+        # self.popList = self.newPop.loc[np.argsort(scores)[:self.size], :]
 
         return self.popList
 
@@ -253,5 +269,5 @@ class mazaPop:
     #
     #     # print(childList)
     #     self.newPop = pd.DataFrame(data={"State":childList, "Aptitude":np.zeros(len(childList))})
-    #     self.newPop = compute_aptitudes(self.newPop)
+    #     self.newPop = self.compute_aptitudes(self.newPop)
     #     return self.newPop
