@@ -6,7 +6,7 @@ from tqdm                   import tqdm
 from maza_state             import (mazaState,
                                     mazaPop)
 
-numGenerations = 25
+numGenerations = 100
 sizePop = 30
 ndims = 30
 
@@ -45,6 +45,8 @@ for j in range(numRuns):
     bestFit = []
     popMean = []
     for i in range(len(popGen)):
+        # print("Best fit round {} Gen {}: {}".format(j, i+1, popGen[i]["Aptitude"].max()))
+        # print("Mean fit round {} Gen {}: {}".format(j, i+1, popGen[i]["Aptitude"].mean()))
         bestFit.append(popGen[i]["Aptitude"].max())
         popMean.append(popGen[i]["Aptitude"].mean())
 
@@ -58,14 +60,14 @@ for j in range(numRuns):
 print("\nStatistics of {} runs".format(numRuns))
 print("Best Fitness Mean: {:.3f}".format(np.mean(bestFitOverall)))
 print("Best Fitness Std : {:.3f}".format(np.std(bestFitOverall)))
-print("Mean number of Generations until convergence         : {:.2f}".format(np.mean(genCount)))
-print("Mean number of fitness evaluations until convergence : {:.2f}".format(np.mean(fitEvals)))
+# print("Mean number of Generations until convergence         :\n{:.2f}".format(np.mean(genCount)))
+# print("Mean number of fitness evaluations until convergence :\n{:.2f}".format(np.mean(fitEvals)))
 
 plt.plot(bestFit, 'r', label="Best Fitness")
 plt.plot(popMean, 'b', label="Mean Fitness")
 plt.legend()
 
-plt.title("Fitness per Generation for one run")
+plt.title("Fitness per Generation for run {}".format(numRuns))
 plt.xlabel("Generation")
 plt.ylabel("Fitness")
 

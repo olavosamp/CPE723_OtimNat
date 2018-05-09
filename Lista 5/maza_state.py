@@ -18,6 +18,7 @@ def ackley(x):
     x is the 1 by ndims input vector
     '''
     x = np.array(x)
+    x = x+1
     arg1 = -0.2*np.sqrt(np.mean(x*x))
     arg2 = np.mean(np.cos(2*np.pi*x))
 
@@ -109,7 +110,7 @@ class mazaState:
             gaussNoise = np.random.normal()
             sigmaNoise = np.random.normal(size=self.ndims)
 
-            newSigma = self.val[:self.ndims]*np.exp(tau1*gaussNoise)*np.exp(tau2*sigmaNoise)
+            newSigma = self.val[self.ndims:]*np.exp(tau1*gaussNoise)*np.exp(tau2*sigmaNoise)
 
             # State mutation
             stateNoise = np.random.normal(size=self.ndims)
