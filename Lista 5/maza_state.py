@@ -1,6 +1,7 @@
 import numpy    as np
 import pandas   as pd
-from q1 import roundRobin
+import copy
+
 # from tqdm import tqdm
 
 # def flipBit(bit):
@@ -15,10 +16,13 @@ def ackley(x):
     '''
     n-dimensional Ackley Cost Function
 
-    x is the 1 by ndims input vector
+    x is the 1 by ndims vector of state values
     '''
     x = np.array(x)
-    x = x+1
+
+    # Optionally test algorithm robustness by moving global optimum
+    # x = x+1
+
     arg1 = -0.2*np.sqrt(np.mean(x*x))
     arg2 = np.mean(np.cos(2*np.pi*x))
 
@@ -35,6 +39,15 @@ def crossover_1_point(parentA, parentB, percentA=0.5):
     child = parentA[:cut] + parentB[cut:]
     return child
 
+def copyPop(originalPop):
+    size = len(originalPop)
+
+    copyPop = originalPop.copy()
+    for i in range(size):
+        copyPop.loc[i, "State"] = copy.deepcopy(originalPop.loc[i, "State"])
+
+    # print("Is same?", copyPop.loc[0, "State"] is originalPop.loc[0, "State"])
+    return copyPop
 
 class mazaState:
     """
@@ -70,6 +83,7 @@ class mazaState:
             self.val = val
         else:
             raise ValueError("Value must be a vector of lenght {}, but received length {}".format(2*self.ndims, len(val)))
+        # self.val = val
         return self.val
 
     # Assign a random value for val attribute
@@ -106,6 +120,7 @@ class mazaState:
 
         randomNum = np.random.rand()
         if randomNum < mutateProb:
+
             # Sigma mutation
             gaussNoise = np.random.normal()
             sigmaNoise = np.random.normal(size=self.ndims)
@@ -129,12 +144,15 @@ class mazaPop:
     def __init__(self, size=50, seed=0, initRange=2.0, ndims=2):
         self.mutateProb = 1.0
         self.fitEvals   = 0
-        self.newPop     = []
+        # self.newPop     = []
+        self.tauMod     = 0.9
+        self.acceptPercent = 0.2
 
         # Compute sigma mutation parameters
-        self.tau1 = 1/(np.sqrt(2*size))
-        self.tau2 = 1/(np.sqrt(2*np.sqrt(size)))
+        self.tau1 = 5*1/(np.sqrt(2*size))
+        self.tau2 = 5*1/(np.sqrt(2*np.sqrt(size)))
 
+        # Set fixed random generator seed, if required
         if seed != 0:
             np.random.seed(seed=seed)
 
@@ -147,17 +165,13 @@ class mazaPop:
         aptList = np.zeros(self.size)
         self.popList = pd.DataFrame(data={"State":stateList, "Aptitude":aptList})
 
-        # Compute aptitude list via corresponding function
-        self.popList = self.compute_aptitudes(self.popList)
-
-        # print(self.popList.loc[0, "State"].val)
-        # input()
+        # Compute aptitude list
+        self.compute_aptitudes(self.popList)
 
 
     def compute_aptitudes(self, popList):
         # Compute fitness for every state
-        aptList = list(map(lambda x: x.aptitude(), popList["State"]))
-        popList["Aptitude"] = aptList
+        popList["Aptitude"] = list(map(lambda x: x.aptitude(), popList["State"]))
 
         # Increment number of fitness evaluations
         self.fitEvals += len(popList)
@@ -171,18 +185,80 @@ class mazaPop:
             Parent selection is not implemented for Evolutionary Programming algorithms
             Every specimen generates an offspring via mutation of its own genetic load
         '''
-        return self.popList
+        return self.popList.copy(deep=True)
+
+
+    def mutation(self, population, mutateProb=1.0):
+        if self.acceptPercent > 0.2:
+            self.tau1 /= self.tauMod
+            self.tau2 /= self.tauMod
+
+        elif self.acceptPercent < 0.2:
+            self.tau1 *= self.tauMod
+            self.tau2 *= self.tauMod
+
+        # self.newPop = population.copy(deep=True)
+        self.newPop = copyPop(population)
+        #
+        # print("\npopList--------------")
+        # for state in self.popList["State"]:
+        #     print(state.val)
+        # print("--------------")
+        # print(self.newPop["Aptitude"])
+        # print(self.newPop.shape)
+        # print("newPop--------------")
+        # for state in self.newPop["State"]:
+        #     print(state.val)
+        # print("MAZA IS: ", self.popList.loc[0, "State"] is self.newPop.loc[0, "State"])
+
+        for i in range(len(population)):
+            self.newPop.loc[i, "State"].mutate_uncorr_multistep(self.tau1, self.tau2, mutateProb)
+
+        # print("popList--------------")
+        # for state in self.popList["State"]:
+        #     print(state.val)
+        # print("newPop--------------")
+        # for state in self.newPop["State"]:
+        #     print(state.val)
+
+        # Update aptitudes
+        # print(self.popList["Aptitude"])
+        self.compute_aptitudes(self.newPop)
+
+        self.acceptPercent = np.mean(self.newPop["Aptitude"] > self.popList["Aptitude"], axis=0)
+        # print(self.newPop.shape)
+        # print("newPop--------------")
+        # # print(self.newPop["Aptitude"])
+        # for state in self.newPop["State"]:
+        #     print(state.val)
+
+        # input()
+
+        return self.newPop
+
 
     def survivor_selection_n_best(self):
         '''
             Select the specimens with highest aptitude, in a number equal to population size.
             Population list to be selected is the entire list of parents plus offspring.
         '''
+        # print(self.newPop["Aptitude"])
+        # for state in self.newPop["State"]:
+        #     print(state.val)
+        self.compute_aptitudes(self.newPop)
+        # print("--------------")
+        # for state in self.newPop["State"]:
+        #     print(state.val)
+        # print(self.newPop["Aptitude"])
+        self.newPop.sort_values("Aptitude", ascending=False, inplace=True, kind='quicksort')
 
-        self.newPop  = self.compute_aptitudes(self.newPop)
-        self.newPop  = self.newPop.sort_values("Aptitude", ascending=False)
-        self.popList = self.newPop.iloc[:self.size, :].reset_index(drop=True)
+
+        self.popList = self.newPop.iloc[:self.size, :2].copy(deep=True).reset_index(drop=True)
+
+        # print(self.popList["Aptitude"])
+
         return self.popList
+
 
     def survivor_selection_tourney(self, numPlays=10):
         '''
@@ -195,12 +271,12 @@ class mazaPop:
 
             After the Tournament ends, the highest scoring specimens are selected until population size is filled.
         '''
-        winScore  = +3
+        winScore  = +1
         drawScore =  0
-        loseScore = -1
+        loseScore = -2
 
-        popSize = len(self.newPop)
-        score = pd.DataFrame({"Score":np.zeros(popSize)})
+        popSize    = len(self.newPop)
+        score      = pd.DataFrame({"Score":np.zeros(popSize)})
         tourneyPop = pd.concat([self.newPop, score], axis=1)
 
         for i in range(popSize):
@@ -209,66 +285,42 @@ class mazaPop:
             currList = np.ones(numPlays)*tourneyPop.loc[i    , "Aptitude"]
             oppList  = tourneyPop.loc[opponents, "Aptitude"].values
 
-            # Score of current contestant
+            # Score changes of current contestant
             scoreList = np.zeros(numPlays)
-            scoreList += np.where(currList > oppList, winScore, drawScore)
-            scoreList += np.where(currList < oppList, loseScore, drawScore)
+            scoreList += np.where(currList > oppList,  winScore, 0)
+            scoreList += np.where(currList < oppList,  loseScore, 0)
+            # Uncomment for drawScore != 0
+            # scoreList += np.where(currList == oppList, drawScore, 0)
 
-            # Score of opponents
-
+            # Score changes of opponents
+            # Not implemented, probably doesn't change the outcome
 
             tourneyPop.loc[i, "Score"] += np.sum(scoreList)
 
-        tourneyPop   = tourneyPop.sort_values("Score", ascending=False)
-        self.popList = tourneyPop.iloc[:self.size, :2].reset_index(drop=True)
+        tourneyPop.sort_values("Score", ascending=False, inplace=True)
+        self.popList = tourneyPop.iloc[:self.size, :2].copy(deep=True).reset_index(drop=True)
         # print(tourneyPop.head(10))
         # print(self.popList.head(10))
 
         return self.popList
 
 
-    def mutation(self, population, mutateProb=1.0):
-        for i in range(len(population)):
-            population.loc[i, "State"].mutate_uncorr_multistep(self.tau1, self.tau2, mutateProb)
-
-        self.newPop = population
-
-        # Update aptitudes
-        self.newPop = self.compute_aptitudes(self.newPop)
-
-        return self.newPop
-
     def generation(self):
-        parents = self.select_parents()
+        parents = self.popList
 
-        # self.recombination_n_bes(parents, numChildren=2)
+        # self.recombination_n_best(parents, numChildren=2)
 
         self.mutation(parents, mutateProb=self.mutateProb)
-        self.newPop = pd.concat([self.newPop, self.popList]).reset_index(drop=True)
+        # self.compute_aptitudes(self.popList)
+        self.compute_aptitudes(self.newPop)
+        # AQUI ESTA O BUG
 
-        # self.survivor_selection_n_best()
+        self.newPop = pd.concat([self.popList, self.newPop], ignore_index=True)
+
+        self.compute_aptitudes(self.newPop)
+
         self.survivor_selection_tourney()
-        # scores = roundRobin(self.newPop["Aptitude"].values)
-        # self.popList = self.newPop.loc[np.argsort(scores)[:self.size], :]
+        # self.survivor_selection_n_best()
+
 
         return self.popList
-
-    #
-    # def recombination(self, parents, numChildren=2):
-    #     # Shuffle parents list
-    #     parents = parents.sample(frac=1.0).reset_index(drop=True)
-    #     parents = parents["State"]
-    #     parentsLen = len(parents)
-    #
-    #     childList = []
-    #     for i in range(int(self.numParents/2)):
-    #         parentA = parents[i].val
-    #         parentB = parents[parentsLen-i-1].val
-    #         for j in range(numChildren):
-    #             newChild = mazaState(val=crossover_1_point(parentA, parentB))
-    #             childList.append(newChild)
-    #
-    #     # print(childList)
-    #     self.newPop = pd.DataFrame(data={"State":childList, "Aptitude":np.zeros(len(childList))})
-    #     self.newPop = self.compute_aptitudes(self.newPop)
-    #     return self.newPop
