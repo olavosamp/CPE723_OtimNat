@@ -60,8 +60,8 @@ class mazaState:
 
     """
     ## Constructor
-    def __init__(self, val=0.0, randomize=True, ndims=2, sigmaLimit=0.0001, initRange=2.0):
-        self.sigmaLimit = sigmaLimit
+    def __init__(self, val=0.0, randomize=True, ndims=2, minSigma=0.0001, initRange=2.0):
+        self.minSigma = minSigma
         if ndims > 1:
             self.ndims = ndims
         else:
@@ -125,7 +125,12 @@ class mazaState:
             gaussNoise = np.random.normal()
             sigmaNoise = np.random.normal(size=self.ndims)
 
-            newSigma = self.val[self.ndims:]*np.exp(tau1*gaussNoise)*np.exp(tau2*sigmaNoise)
+            oldSigma = self.val[self.ndims:]
+            newSigma = oldSigma*np.exp(tau1*gaussNoise)*np.exp(tau2*sigmaNoise)
+
+            # Check for small sigmas
+            limitSigma = newSigma < self.minSigma
+            newSigma = np.where(limitSigma,  oldSigma, newSigma)
 
             # State mutation
             stateNoise = np.random.normal(size=self.ndims)
@@ -149,8 +154,8 @@ class mazaPop:
         self.acceptPercent = 0.2
 
         # Compute sigma mutation parameters
-        self.tau1 = 5*1/(np.sqrt(2*size))
-        self.tau2 = 5*1/(np.sqrt(2*np.sqrt(size)))
+        self.tau1 = 4*1/(np.sqrt(2*size))
+        self.tau2 = 4*1/(np.sqrt(2*np.sqrt(size)))
 
         # Set fixed random generator seed, if required
         if seed != 0:
@@ -189,13 +194,13 @@ class mazaPop:
 
 
     def mutation(self, population, mutateProb=1.0):
-        if self.acceptPercent > 0.2:
-            self.tau1 /= self.tauMod
-            self.tau2 /= self.tauMod
-
-        elif self.acceptPercent < 0.2:
-            self.tau1 *= self.tauMod
-            self.tau2 *= self.tauMod
+        # if self.acceptPercent > 0.2:
+        #     self.tau1 /= self.tauMod
+        #     self.tau2 /= self.tauMod
+        #
+        # elif self.acceptPercent < 0.2:
+        #     self.tau1 *= self.tauMod
+        #     self.tau2 *= self.tauMod
 
         # self.newPop = population.copy(deep=True)
         self.newPop = copyPop(population)
