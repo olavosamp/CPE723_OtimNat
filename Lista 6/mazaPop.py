@@ -1,6 +1,21 @@
-import numpy    as np
 import pandas   as pd
+import numpy    as np
 from copy       import copy
+
+def update_aptitude(pop, lamarck=False):
+    # Recalculate One-max fitness per specimen
+    aptitude = list(map(lambda x: np.sum(x), pop["State"]))
+    pop["Aptitude"] = aptitude
+
+    ## Update Memetic Aptitudes
+    newStates, memeticAptitudes = compute_memetic_aptitudes(pop)
+
+    if lamarck:
+        for i in range(newStates.shape[0]):
+            pop.loc[i, "State"][:] = newStates[i, :]
+
+    pop["Memetic"] = memeticAptitudes
+    return pop
 
 def bit_flip(bit):
     if bit == 0:
@@ -20,6 +35,7 @@ def greedy_local_search(state):
 
     position = 0
     newApt = 0
+    # print(apt)
     while (newApt < apt) and (position < bitLen):
         newState = copy(state)
         newState[position] = bit_flip(newState[position])
@@ -32,15 +48,12 @@ def greedy_local_search(state):
 def compute_memetic_aptitudes(pop):
     popSize = pop.shape[0]
     bitLen  = len(pop.loc[0, "State"])
+
     # Local search
-    newStates           = np.zeros((popSize, bitLen))
+    newStates           = np.zeros((popSize, bitLen), dtype=int)
     memeticAptitudes    = np.zeros(popSize)
     for i in range(popSize):
         newStates[i,:], memeticAptitudes[i] = greedy_local_search(pop.loc[i, "State"])
-
-    # tempList = np.array(tempList)
-    # print(tempList[:, 0][1])
-    # input()
 
     return newStates, memeticAptitudes
 
@@ -51,7 +64,8 @@ def parent_selection_roulette(population, numParents):
     '''
     popSize = population.shape[0]
 
-    probabilities = population["Aptitude"]/population["Aptitude"].sum()
+    # probabilities = population["Aptitude"]/population["Aptitude"].sum()
+    probabilities = population["Memetic"]/population["Memetic"].sum()
 
     parentsIndex = np.random.choice(range(popSize), size=numParents, p=probabilities, replace=True)
 
@@ -127,15 +141,27 @@ class MazaPop:
 
         self.pop = pd.DataFrame(data={"State":state, "Aptitude":aptitude})
 
-    def update_aptitude(self):
+    def update_aptitude(self, lamarck=False):
         # Recalculate One-max fitness per specimen
         aptitude = compute_aptitudes(state)
         self.pop["Aptitude"] = aptitude
 
+        ## Update Memetic Aptitudes
+        newStates, memeticAptitudes = compute_memetic_aptitudes(self.pop)
+
+        if lamarck:
+            for i in range(newStates.shape[0]):
+                self.pop.loc[i, "State"][:] = newStates[i, :]
+
+        self.pop["Memetic"] = memeticAptitudes
+
         return aptitude
 
-def generation(pop, crossProb=0.9, mutateProb=0.05):
+def generation(pop, crossProb=0.9, mutateProb=0.05, lamarck=False):
     numParents = pop.shape[0]
+
+    # Update memetic aptitudes
+    pop = update_aptitude(pop, lamarck=lamarck).copy()
 
     zeroPad = np.zeros(pop.shape[0])
     newPop = pd.DataFrame(data={"State":zeroPad, "Aptitude":zeroPad})
@@ -162,8 +188,6 @@ def generation(pop, crossProb=0.9, mutateProb=0.05):
     newPop["Aptitude"] = list(map(lambda x: np.sum(x), newPop["State"]))
 
     ## Update Memetic Aptitudes
-    newStates, memeticAptitudes = compute_memetic_aptitudes(newPop)
-    newPop["State"] = newStates
-    newPop["Memetic"] = memeticAptitudes
+    newPop = update_aptitude(newPop, lamarck=lamarck).copy()
 
     return newPop
